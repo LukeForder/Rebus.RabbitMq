@@ -33,7 +33,7 @@ public static class RabbitMqDelayedMessageExchangeExtensions
             {
                 var options = c.Get<Options>();
 
-                var timeoutManagerAddress = $"@{exchangeName}";
+                var timeoutManagerAddress = exchangeName;
 
                 if (!string.IsNullOrWhiteSpace(options.ExternalTimeoutManagerAddressOrNull))
                 {
@@ -72,12 +72,6 @@ public static class RabbitMqDelayedMessageExchangeExtensions
             _rabbitMqTransport = rabbitMqTransport ?? throw new ArgumentNullException(nameof(rabbitMqTransport));
             _declareExchange = declareExchange;
             _exchangeName = options.ExternalTimeoutManagerAddressOrNull;
-
-            if (!_exchangeName.StartsWith("@"))
-            {
-                throw new ArgumentException(
-                    $"Expected the delayed message exchange name to start with '@', e.g. like '@RebusDelayed' or something like that - the value passed to the transport decorator via Options.ExternalTimeoutManagerAddressOrNull was '{options.ExternalTimeoutManagerAddressOrNull}");
-            }
         }
 
         public void CreateQueue(string address) => _transport.CreateQueue(address);
@@ -88,7 +82,7 @@ public static class RabbitMqDelayedMessageExchangeExtensions
         {
             if (!_declareExchange) return;
 
-            _logger.Info("Delaring delayed message exchange with name {exchangeName}", _exchangeName);
+            _logger.Info("Declaring delayed message exchange with name {exchangeName}", _exchangeName);
 
             _rabbitMqTransport.DeclareDelayedMessageExchange(_exchangeName);
         }
@@ -108,7 +102,7 @@ public static class RabbitMqDelayedMessageExchangeExtensions
 
                 headers["x-delay"] = delayMs.ToString(CultureInfo.InvariantCulture);
 
-                return _transport.Send($"{recipient}{_exchangeName}", message, context);
+                return _transport.Send($"{recipient}@{_exchangeName}", message, context);
             }
 
             return _transport.Send(destinationAddress, message, context);
